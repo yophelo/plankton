@@ -73,6 +73,7 @@ export class Game {
   }
 
   start() {
+    if (this.gameStarted) return;
     this.gameStarted = true;
     this.gameOver = false;
     this.init();
@@ -130,8 +131,8 @@ export class Game {
   getMouseWorldPos() {
     const pos = this.input.getPosition();
     return {
-      x: pos.x - this.width / 2 + this.camera.x,
-      y: pos.y - this.height / 2 + this.camera.y
+      x: (pos.x - this.width / 2) / this.camera.zoom + this.camera.x,
+      y: (pos.y - this.height / 2) / this.camera.zoom + this.camera.y
     };
   }
 
@@ -140,9 +141,6 @@ export class Game {
 
     this.frameCount++;
     this.score.survivalTime = Math.floor((Date.now() - this.score.startTime) / 1000);
-
-    // Update particles
-    this.particleSystem.update(this.camera, this.width, this.height);
 
     // Respawn AI
     const respawnTypes = this.aiManager.updateRespawns();
@@ -243,10 +241,10 @@ export class Game {
               this.evolveAIGroup(groupId);
             }
             group.evolutionStage = 0;
-          } else if (group.level >= 3) {
-            this.upgradeAIGroupComplexity(groupId);
-          } else {
+          } else if (group.evolutionStage <= 2) {
             this.addAICreatureToGroup(groupId);
+          } else {
+            this.upgradeAIGroupComplexity(groupId);
           }
         }
       }
@@ -368,6 +366,9 @@ export class Game {
     if (allEaten.size > 0) {
       this.particleSystem.removeIndices(allEaten);
     }
+
+    // Update particles (cull/respawn) after detection and removal to keep indices stable
+    this.particleSystem.update(this.camera, this.width, this.height);
 
     // Add energy from player-eaten particles
     let energyGained = 0;

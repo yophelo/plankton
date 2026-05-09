@@ -97,8 +97,19 @@ export class BaseCreature {
     const eaten = [];
     if (this.chains.length === 0 && !this.centerCollision) return eaten;
 
+    const cullDist = 200;
+    const cullDistSq = cullDist * cullDist;
+    const cx = this.x;
+    const cy = this.y;
+
     particles.forEach((p, idx) => {
       if (p.invulnerable) return;
+
+      // Quick distance pre-check from creature center
+      const pdx = p.x - cx;
+      const pdy = p.y - cy;
+      if (pdx * pdx + pdy * pdy > cullDistSq) return;
+
       let hit = false;
 
       if (!hit && this.centerCollision) {
