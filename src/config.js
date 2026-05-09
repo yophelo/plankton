@@ -3,10 +3,10 @@ export const BASE_STAGE_ENERGY = 40;
 export const WORLD_SIZE = 4000;
 
 export const INITIAL_AI_COUNTS = {
-  0: 18,
-  1: 12,
-  2: 8,
-  3: 5,
+  0: 10,
+  1: 7,
+  2: 6,
+  3: 6,
   4: 3,
   5: 2,
   6: 1,
