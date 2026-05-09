@@ -204,7 +204,7 @@ export class Game {
       creature.velocity.y = vy;
 
       // AI hunt trigger
-      if (creature.canHunt() && Math.random() < 0.002) {
+      if (creature.canHunt() && Math.random() < 0.001) {
         creature.tryStartHunt();
       }
 
@@ -301,7 +301,7 @@ export class Game {
       creature.velocity.y = vy;
 
       // Player hunt trigger
-      if (creature.canHunt() && Math.random() < 0.003) {
+      if (creature.canHunt() && Math.random() < 0.0015) {
         creature.tryStartHunt();
       }
 
@@ -352,12 +352,12 @@ export class Game {
 
     // Player creature loss handling
     if (playerLostCreature) {
-      if (this.evolutionStage > 0) {
-        this.evolutionStage--;
-        this.ui.update(this.playerLevel, this.evolutionStage, this.stageEnergy, this.stageMaxEnergy, this.creatures.length, this.aiCreatures.length);
-      } else if (this.creatures.length === 0) {
+      if (this.creatures.length === 0) {
         this.triggerGameOver();
         return;
+      } else if (this.evolutionStage > 0) {
+        this.evolutionStage--;
+        this.ui.update(this.playerLevel, this.evolutionStage, this.stageEnergy, this.stageMaxEnergy, this.creatures.length, this.aiCreatures.length);
       }
     }
 

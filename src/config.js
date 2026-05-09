@@ -1,5 +1,5 @@
 export const PARTICLE_COUNT = 4000;
-export const BASE_STAGE_ENERGY = 25;
+export const BASE_STAGE_ENERGY = 40;
 export const WORLD_SIZE = 10000;
 
 export const INITIAL_AI_COUNTS = {
@@ -23,8 +23,8 @@ export const SPECIES = [
     desc: 'Micro - High frequency movement',
     color: '#fff',
     glow: '#fff',
-    speed: 0.05,
-    huntSpeed: 0.055,
+    speed: 0.035,
+    huntSpeed: 0.04,
     huntDuration: 180,
     huntCooldown: 300
   },
@@ -33,8 +33,8 @@ export const SPECIES = [
     desc: 'Larval - Rigid thrust and glide',
     color: '#aff',
     glow: '#0ff',
-    speed: 0.04,
-    huntSpeed: 0.055,
+    speed: 0.028,
+    huntSpeed: 0.04,
     huntDuration: 180,
     huntCooldown: 300
   },
@@ -43,8 +43,8 @@ export const SPECIES = [
     desc: 'Cnidarian - Radial contraction jets',
     color: '#faa',
     glow: '#f00',
-    speed: 0.035,
-    huntSpeed: 0.045,
+    speed: 0.025,
+    huntSpeed: 0.032,
     huntDuration: 180,
     huntCooldown: 300
   },
@@ -53,8 +53,8 @@ export const SPECIES = [
     desc: 'Segmented - Sine wave with barbs',
     color: '#afa',
     glow: '#0f0',
-    speed: 0.03,
-    huntSpeed: 0.045,
+    speed: 0.021,
+    huntSpeed: 0.032,
     huntDuration: 240,
     huntCooldown: 360
   },
@@ -63,8 +63,8 @@ export const SPECIES = [
     desc: 'Crustacean - Heavy armor shear',
     color: '#fa0',
     glow: '#ff0',
-    speed: 0.02,
-    huntSpeed: 0.045,
+    speed: 0.014,
+    huntSpeed: 0.032,
     huntDuration: 240,
     huntCooldown: 420
   },
@@ -73,8 +73,8 @@ export const SPECIES = [
     desc: 'Manta - Elegant wave flight',
     color: '#aaa',
     glow: '#fff',
-    speed: 0.018,
-    huntSpeed: 0.05,
+    speed: 0.013,
+    huntSpeed: 0.035,
     huntDuration: 300,
     huntCooldown: 480
   },
@@ -83,8 +83,8 @@ export const SPECIES = [
     desc: 'Aggregate - Multi-core seeking',
     color: '#d0f',
     glow: '#a0f',
-    speed: 0.015,
-    huntSpeed: 0.05,
+    speed: 0.011,
+    huntSpeed: 0.035,
     huntDuration: 300,
     huntCooldown: 540
   },
@@ -93,8 +93,8 @@ export const SPECIES = [
     desc: 'Titan - All-consuming gravity',
     color: '#f44',
     glow: '#800',
-    speed: 0.015,
-    huntSpeed: 0.045,
+    speed: 0.011,
+    huntSpeed: 0.032,
     huntDuration: 360,
     huntCooldown: 600
   }
