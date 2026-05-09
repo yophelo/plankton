@@ -1,6 +1,6 @@
 import { SPECIES, PARTICLE_COUNT, WORLD_SIZE, INITIAL_AI_COUNTS, stageEnergy } from './config.js';
 import { Camera } from './camera.js';
-import { InputHandler } from './input.js';
+import { InputHandler, CONTROL_MODE } from './input.js';
 import { ParticleSystem } from './particles.js';
 import { AIManager, updateFlocking } from './ai.js';
 import { UI } from './ui.js';
@@ -84,6 +84,10 @@ export class Game {
     this.init();
   }
 
+  setControlMode(mode) {
+    this.input.setMode(mode);
+  }
+
   init() {
     this.creatures = [];
     this.aiCreatures = [];
@@ -141,6 +145,22 @@ export class Game {
   }
 
   getMouseWorldPos() {
+    if (this.input.mode === CONTROL_MODE.JOYSTICK) {
+      // In joystick mode, return a target position relative to the player
+      const dir = this.input.getJoystickDirection();
+      if (this.creatures.length > 0 && (Math.abs(dir.dx) > 0.01 || Math.abs(dir.dy) > 0.01)) {
+        const leader = this.creatures[0];
+        // Project target 300 units in joystick direction
+        return {
+          x: leader.x + dir.dx * 300,
+          y: leader.y + dir.dy * 300
+        };
+      }
+      // No input: return player position (stay still)
+      if (this.creatures.length > 0) {
+        return { x: this.creatures[0].x, y: this.creatures[0].y };
+      }
+    }
     const pos = this.input.getPosition();
     return {
       x: (pos.x - this.width / 2) / this.camera.zoom + this.camera.x,
@@ -636,6 +656,9 @@ export class Game {
     }
 
     this.ctx.restore();
+
+    // Draw joystick overlay (screen space)
+    this.input.drawJoystick(this.ctx);
   }
 
   drawBoundary() {
