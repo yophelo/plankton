@@ -15,9 +15,7 @@ export class Camera {
   }
 
   setZoomForLevel(level) {
-    // Increased zoom for mobile - original was designed for 1920px wide screens
-    // Mobile screens are ~800-1200px wide in landscape, so need higher zoom
-    const zoomLevels = [2.5, 2.1, 1.8, 1.5, 1.2, 1.0, 0.85, 0.7];
+    const zoomLevels = [1.6, 1.4, 1.2, 1.0, 0.85, 0.7, 0.6, 0.5];
     this.targetZoom = zoomLevels[Math.min(level, zoomLevels.length - 1)];
   }
 

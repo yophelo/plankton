@@ -19,8 +19,8 @@ export function stageEnergy(level) {
 
 export const SPECIES = [
   {
-    name: 'I. Photon',
-    desc: 'Micro - High frequency movement',
+    name: 'I. 光子',
+    desc: '微尘级 - 神经质的高频移动',
     color: '#fff',
     glow: '#fff',
     speed: 0.035,
@@ -29,8 +29,8 @@ export const SPECIES = [
     huntCooldown: 300
   },
   {
-    name: 'II. Dart',
-    desc: 'Larval - Rigid thrust and glide',
+    name: 'II. 飞梭',
+    desc: '幼体级 - 僵硬的冲刺与滑行',
     color: '#aff',
     glow: '#0ff',
     speed: 0.028,
@@ -39,8 +39,8 @@ export const SPECIES = [
     huntCooldown: 300
   },
   {
-    name: 'III. Pulse',
-    desc: 'Cnidarian - Radial contraction jets',
+    name: 'III. 水母',
+    desc: '腔肠级 - 径向收缩与喷射',
     color: '#faa',
     glow: '#f00',
     speed: 0.025,
@@ -49,8 +49,8 @@ export const SPECIES = [
     huntCooldown: 300
   },
   {
-    name: 'IV. Serpent',
-    desc: 'Segmented - Sine wave with barbs',
+    name: 'IV. 蛇刺',
+    desc: '环节级 - 正弦波游动与倒刺',
     color: '#afa',
     glow: '#0f0',
     speed: 0.021,
@@ -59,8 +59,8 @@ export const SPECIES = [
     huntCooldown: 360
   },
   {
-    name: 'V. Pincer',
-    desc: 'Crustacean - Heavy armor shear',
+    name: 'V. 双螯',
+    desc: '甲壳级 - 重装甲与机械剪切',
     color: '#fa0',
     glow: '#ff0',
     speed: 0.014,
@@ -69,8 +69,8 @@ export const SPECIES = [
     huntCooldown: 420
   },
   {
-    name: 'VI. Glider',
-    desc: 'Manta - Elegant wave flight',
+    name: 'VI. 滑翔者',
+    desc: '蝠鲼级 - 优雅的波浪飞行',
     color: '#aaa',
     glow: '#fff',
     speed: 0.013,
@@ -79,8 +79,8 @@ export const SPECIES = [
     huntCooldown: 480
   },
   {
-    name: 'VII. Hydra',
-    desc: 'Aggregate - Multi-core seeking',
+    name: 'VII. 九头蛇',
+    desc: '聚合级 - 多核心独立索敌',
     color: '#d0f',
     glow: '#a0f',
     speed: 0.011,
@@ -89,8 +89,8 @@ export const SPECIES = [
     huntCooldown: 540
   },
   {
-    name: 'VIII. Leviathan',
-    desc: 'Titan - All-consuming gravity',
+    name: 'VIII. 利维坦',
+    desc: '巨兽级 - 吞噬一切的引力场',
     color: '#f44',
     glow: '#800',
     speed: 0.011,

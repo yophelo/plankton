@@ -18,7 +18,7 @@ export class UI {
     const percent = Math.min(100, (stageEnergy / stageMaxEnergy) * 100);
     if (this.energyBar) this.energyBar.style.width = percent + '%';
     if (this.energyText) {
-      this.energyText.textContent = `Stage ${evolutionStage + 1}/5 - ${Math.floor(stageEnergy)} / ${stageMaxEnergy}`;
+      this.energyText.textContent = `阶段 ${evolutionStage + 1}/5 - ${Math.floor(stageEnergy)} / ${stageMaxEnergy}`;
     }
     if (this.creatureCount) this.creatureCount.textContent = playerCount;
     if (this.aiCreatureCount) this.aiCreatureCount.textContent = aiCount;
@@ -46,26 +46,27 @@ export class UI {
     overlay.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse at center,rgba(20,10,10,0.95) 0%,rgba(5,10,15,0.98) 100%);display:flex;align-items:center;justify-content:center;z-index:1000;`;
 
     overlay.innerHTML = `
-      <div style="text-align:center;max-width:90vw;overflow-y:auto;max-height:90vh;padding:20px;">
-        <div style="font-size:64px;font-weight:bold;color:#fff;text-shadow:0 0 20px rgba(255,50,50,0.8);letter-spacing:6px;margin-bottom:8px;">EXTINCT</div>
-        <div style="font-size:16px;color:rgba(255,255,255,0.5);margin-bottom:20px;">All your creatures have been eliminated</div>
-        <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:20px;margin:15px auto;max-width:400px;">
-          <div style="font-size:36px;font-weight:bold;color:#fff;margin-bottom:15px;">Score: ${total.toLocaleString()}</div>
-          <div style="margin:12px 0;padding:10px 0;border-top:1px solid rgba(255,255,255,0.1);">
-            <div style="color:rgba(255,255,255,0.7);font-size:15px;"><span style="color:#4af;">Max Level:</span> ${SPECIES[maxLevel].name}</div>
-            <div style="color:rgba(255,255,255,0.5);font-size:12px;">Level: ${levelScore.toLocaleString()}</div>
+      <div style="text-align:center;max-width:95vw;max-height:95vh;padding:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <div style="font-size:42px;font-weight:bold;color:#fff;text-shadow:0 0 20px rgba(255,50,50,0.8);letter-spacing:4px;margin-bottom:5px;">灭绝</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:10px;">你的所有生物已被消灭</div>
+        <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 20px;margin:8px auto;display:flex;flex-wrap:wrap;gap:15px;align-items:center;justify-content:center;">
+          <div style="text-align:center;">
+            <div style="font-size:28px;font-weight:bold;color:#fff;">得分: ${total.toLocaleString()}</div>
           </div>
-          <div style="margin:12px 0;padding:10px 0;border-top:1px solid rgba(255,255,255,0.1);">
-            <div style="color:rgba(255,255,255,0.7);font-size:15px;"><span style="color:#4f4;">Survival:</span> ${survivalTime}s</div>
-            <div style="color:rgba(255,255,255,0.5);font-size:12px;">Survival: ${survivalScore.toLocaleString()}</div>
+          <div style="text-align:center;padding:0 15px;border-left:1px solid rgba(255,255,255,0.1);">
+            <div style="color:rgba(255,255,255,0.6);font-size:12px;">最高等级</div>
+            <div style="color:#4af;font-size:14px;font-weight:bold;">${SPECIES[maxLevel].name}</div>
           </div>
-          <div style="margin:12px 0;padding:10px 0;border-top:1px solid rgba(255,255,255,0.1);">
-            <div style="color:rgba(255,255,255,0.7);font-size:15px;"><span style="color:#f44;">Kills:</span> ${kills}</div>
-            <div style="color:rgba(255,255,255,0.5);font-size:12px;">Kill: ${killScore.toLocaleString()}</div>
-            ${killDetails}
+          <div style="text-align:center;padding:0 15px;border-left:1px solid rgba(255,255,255,0.1);">
+            <div style="color:rgba(255,255,255,0.6);font-size:12px;">存活时间</div>
+            <div style="color:#4f4;font-size:14px;font-weight:bold;">${survivalTime}秒</div>
+          </div>
+          <div style="text-align:center;padding:0 15px;border-left:1px solid rgba(255,255,255,0.1);">
+            <div style="color:rgba(255,255,255,0.6);font-size:12px;">击杀数</div>
+            <div style="color:#f44;font-size:14px;font-weight:bold;">${kills}</div>
           </div>
         </div>
-        <button id="restartBtn" style="background:linear-gradient(135deg,rgba(255,50,50,0.2),rgba(200,50,50,0.2));border:2px solid rgba(255,50,50,0.6);color:#f55;font-size:20px;padding:14px 50px;border-radius:50px;cursor:pointer;font-family:'Courier New',monospace;letter-spacing:3px;margin-top:15px;">RESTART</button>
+        <button id="restartBtn" style="background:linear-gradient(135deg,rgba(255,50,50,0.2),rgba(200,50,50,0.2));border:2px solid rgba(255,50,50,0.6);color:#f55;font-size:18px;padding:12px 40px;border-radius:50px;cursor:pointer;font-family:'Courier New',monospace;letter-spacing:3px;margin-top:12px;touch-action:manipulation;">重新开始</button>
       </div>
     `;
 
@@ -96,30 +97,27 @@ export class UI {
     overlay.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse at center,rgba(10,20,30,0.95) 0%,rgba(5,10,15,0.98) 100%);display:flex;align-items:center;justify-content:center;z-index:1000;`;
 
     overlay.innerHTML = `
-      <div style="text-align:center;max-width:90vw;overflow-y:auto;max-height:90vh;padding:20px;">
-        <div style="font-size:64px;font-weight:bold;color:#fff;text-shadow:0 0 20px rgba(0,255,255,0.8);letter-spacing:6px;margin-bottom:8px;">VICTORY</div>
-        <div style="font-size:16px;color:rgba(0,255,255,0.8);margin-bottom:5px;">You have reached the ultimate form</div>
-        <div style="font-size:20px;color:rgba(255,100,100,0.9);margin-bottom:20px;">Leviathan - Stage 5</div>
-        <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,255,255,0.2);border-radius:12px;padding:20px;margin:15px auto;max-width:400px;">
-          <div style="font-size:36px;font-weight:bold;color:#0ff;margin-bottom:15px;">Score: ${total.toLocaleString()}</div>
-          <div style="margin:12px 0;padding:10px 0;border-top:1px solid rgba(255,255,255,0.1);">
-            <div style="color:rgba(255,255,255,0.7);font-size:15px;"><span style="color:#4af;">Max Level:</span> ${SPECIES[maxLevel].name}</div>
-            <div style="color:rgba(255,255,255,0.5);font-size:12px;">Level: ${levelScore.toLocaleString()}</div>
+      <div style="text-align:center;max-width:95vw;max-height:95vh;padding:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <div style="font-size:42px;font-weight:bold;color:#fff;text-shadow:0 0 20px rgba(0,255,255,0.8);letter-spacing:4px;margin-bottom:5px;">胜利</div>
+        <div style="font-size:13px;color:rgba(0,255,255,0.8);margin-bottom:10px;">你已达到终极形态 - 利维坦</div>
+        <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(0,255,255,0.2);border-radius:10px;padding:12px 20px;margin:8px auto;display:flex;flex-wrap:wrap;gap:15px;align-items:center;justify-content:center;">
+          <div style="text-align:center;">
+            <div style="font-size:28px;font-weight:bold;color:#0ff;">得分: ${total.toLocaleString()}</div>
           </div>
-          <div style="margin:12px 0;padding:10px 0;border-top:1px solid rgba(255,255,255,0.1);">
-            <div style="color:rgba(255,255,255,0.7);font-size:15px;"><span style="color:#4f4;">Survival:</span> ${survivalTime}s</div>
-            <div style="color:rgba(255,255,255,0.5);font-size:12px;">Survival: ${survivalScore.toLocaleString()}</div>
+          <div style="text-align:center;padding:0 15px;border-left:1px solid rgba(255,255,255,0.1);">
+            <div style="color:rgba(255,255,255,0.6);font-size:12px;">存活时间</div>
+            <div style="color:#4f4;font-size:14px;font-weight:bold;">${survivalTime}秒</div>
           </div>
-          <div style="margin:12px 0;padding:10px 0;border-top:1px solid rgba(255,255,255,0.1);">
-            <div style="color:rgba(255,255,255,0.7);font-size:15px;"><span style="color:#f44;">Kills:</span> ${kills}</div>
-            <div style="color:rgba(255,255,255,0.5);font-size:12px;">Kill: ${killScore.toLocaleString()}</div>
-            ${killDetails}
+          <div style="text-align:center;padding:0 15px;border-left:1px solid rgba(255,255,255,0.1);">
+            <div style="color:rgba(255,255,255,0.6);font-size:12px;">击杀数</div>
+            <div style="color:#f44;font-size:14px;font-weight:bold;">${kills}</div>
           </div>
-          <div style="margin:12px 0;padding:10px 0;border-top:1px solid rgba(255,255,255,0.1);">
-            <div style="color:rgba(0,255,255,0.9);font-size:15px;"><span style="color:#ff0;">Victory Bonus:</span> ${victoryBonus.toLocaleString()}</div>
+          <div style="text-align:center;padding:0 15px;border-left:1px solid rgba(255,255,255,0.1);">
+            <div style="color:rgba(255,255,255,0.6);font-size:12px;">胜利奖励</div>
+            <div style="color:#ff0;font-size:14px;font-weight:bold;">${victoryBonus.toLocaleString()}</div>
           </div>
         </div>
-        <button id="victoryRestartBtn" style="background:linear-gradient(135deg,rgba(0,255,255,0.2),rgba(0,170,255,0.2));border:2px solid rgba(0,255,255,0.6);color:#0ff;font-size:20px;padding:14px 50px;border-radius:50px;cursor:pointer;font-family:'Courier New',monospace;letter-spacing:3px;margin-top:15px;">EVOLVE AGAIN</button>
+        <button id="victoryRestartBtn" style="background:linear-gradient(135deg,rgba(0,255,255,0.2),rgba(0,170,255,0.2));border:2px solid rgba(0,255,255,0.6);color:#0ff;font-size:18px;padding:12px 40px;border-radius:50px;cursor:pointer;font-family:'Courier New',monospace;letter-spacing:3px;margin-top:12px;touch-action:manipulation;">再次进化</button>
       </div>
     `;
 

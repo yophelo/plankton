@@ -119,8 +119,10 @@ export class Game {
 
   spawnAICreature(type, groupId) {
     const halfWorld = WORLD_SIZE / 2;
-    const x = (Math.random() - 0.5) * halfWorld * 1.5;
-    const y = (Math.random() - 0.5) * halfWorld * 1.5;
+    // Lower level creatures spawn closer to center so player encounters them early
+    const spawnRadius = type <= 2 ? halfWorld * 0.5 : halfWorld * 0.5 + type * halfWorld * 0.15;
+    const x = (Math.random() - 0.5) * spawnRadius * 2;
+    const y = (Math.random() - 0.5) * spawnRadius * 2;
     const CreatureClass = CREATURE_CLASSES[type];
     const config = SPECIES[type];
     const creature = new CreatureClass(x, y, type, config, true);
