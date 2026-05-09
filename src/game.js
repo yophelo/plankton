@@ -1,0 +1,596 @@
+import { SPECIES, PARTICLE_COUNT, WORLD_SIZE, INITIAL_AI_COUNTS, stageEnergy } from './config.js';
+import { Camera } from './camera.js';
+import { InputHandler } from './input.js';
+import { ParticleSystem } from './particles.js';
+import { AIManager, updateFlocking } from './ai.js';
+import { UI } from './ui.js';
+import { Photon } from './creatures/photon.js';
+import { Dart } from './creatures/dart.js';
+import { Pulse } from './creatures/pulse.js';
+import { Serpent } from './creatures/serpent.js';
+import { Pincer } from './creatures/pincer.js';
+import { Glider } from './creatures/glider.js';
+import { Hydra } from './creatures/hydra.js';
+import { Leviathan } from './creatures/leviathan.js';
+
+const CREATURE_CLASSES = [Photon, Dart, Pulse, Serpent, Pincer, Glider, Hydra, Leviathan];
+
+export class Game {
+  constructor() {
+    this.canvas = document.getElementById('gameCanvas');
+    this.ctx = this.canvas.getContext('2d');
+    this.width = 0;
+    this.height = 0;
+
+    this.camera = new Camera();
+    this.input = new InputHandler(this.canvas);
+    this.particleSystem = new ParticleSystem();
+    this.aiManager = new AIManager();
+    this.ui = new UI();
+
+    this.creatures = [];
+    this.aiCreatures = [];
+    this.playerLevel = 0;
+    this.evolutionStage = 0;
+    this.stageEnergy = 0;
+    this.stageMaxEnergy = stageEnergy(0);
+
+    this.frameCount = 0;
+    this.gameStarted = false;
+    this.gameOver = false;
+
+    this.score = {
+      startTime: 0,
+      survivalTime: 0,
+      maxLevel: 0,
+      kills: 0,
+      killsByLevel: {}
+    };
+
+    this.playerGroupId = 'player_group';
+
+    this.resize();
+    this.setupEvents();
+    this.drawBlackScreen();
+    this.animate();
+  }
+
+  drawBlackScreen() {
+    this.ctx.fillStyle = '#050a0f';
+    this.ctx.fillRect(0, 0, this.width, this.height);
+  }
+
+  resize() {
+    this.width = this.canvas.width = window.innerWidth;
+    this.height = this.canvas.height = window.innerHeight;
+  }
+
+  setupEvents() {
+    window.addEventListener('resize', () => this.resize());
+    window.addEventListener('orientationchange', () => {
+      setTimeout(() => this.resize(), 100);
+    });
+  }
+
+  start() {
+    this.gameStarted = true;
+    this.gameOver = false;
+    this.init();
+  }
+
+  init() {
+    this.creatures = [];
+    this.aiCreatures = [];
+    this.aiManager = new AIManager();
+    this.particleSystem = new ParticleSystem();
+    this.playerLevel = 0;
+    this.evolutionStage = 0;
+    this.stageEnergy = 0;
+    this.stageMaxEnergy = stageEnergy(0);
+    this.score = { startTime: Date.now(), survivalTime: 0, maxLevel: 0, kills: 0, killsByLevel: {} };
+
+    this.createPlayer(0, 0);
+    this.createAllAICreatures();
+    this.particleSystem.generate(PARTICLE_COUNT, this.camera, this.width, this.height);
+    this.camera.setZoomForLevel(0);
+    this.ui.update(this.playerLevel, this.evolutionStage, this.stageEnergy, this.stageMaxEnergy, this.creatures.length, this.aiCreatures.length);
+  }
+
+  createPlayer(x, y) {
+    const CreatureClass = CREATURE_CLASSES[this.playerLevel];
+    const config = SPECIES[this.playerLevel];
+    const creature = new CreatureClass(x, y, this.playerLevel, config, false);
+    creature.groupId = this.playerGroupId;
+    this.creatures.push(creature);
+  }
+
+  createAllAICreatures() {
+    for (const [typeStr, count] of Object.entries(INITIAL_AI_COUNTS)) {
+      const type = parseInt(typeStr);
+      const groupId = `ai_group_${type}_${Math.random()}`;
+      this.aiManager.createGroup(groupId, type);
+
+      for (let i = 0; i < count; i++) {
+        this.spawnAICreature(type, groupId);
+      }
+    }
+  }
+
+  spawnAICreature(type, groupId) {
+    const halfWorld = WORLD_SIZE / 2;
+    const x = (Math.random() - 0.5) * halfWorld * 1.5;
+    const y = (Math.random() - 0.5) * halfWorld * 1.5;
+    const CreatureClass = CREATURE_CLASSES[type];
+    const config = SPECIES[type];
+    const creature = new CreatureClass(x, y, type, config, true);
+    creature.groupId = groupId;
+    this.aiCreatures.push(creature);
+  }
+
+  getMouseWorldPos() {
+    const pos = this.input.getPosition();
+    return {
+      x: pos.x - this.width / 2 + this.camera.x,
+      y: pos.y - this.height / 2 + this.camera.y
+    };
+  }
+
+  update() {
+    if (!this.gameStarted || this.gameOver) return;
+
+    this.frameCount++;
+    this.score.survivalTime = Math.floor((Date.now() - this.score.startTime) / 1000);
+
+    // Update particles
+    this.particleSystem.update(this.camera, this.width, this.height);
+
+    // Respawn AI
+    const respawnTypes = this.aiManager.updateRespawns();
+    for (const type of respawnTypes) {
+      const groupId = `ai_respawn_${type}_${Math.random()}`;
+      this.aiManager.createGroup(groupId, type);
+      this.spawnAICreature(type, groupId);
+    }
+
+    const mouseWorld = this.getMouseWorldPos();
+    const allCreatures = [...this.creatures, ...this.aiCreatures];
+    const eatenByPlayer = new Set();
+    const eatenByAI = new Set();
+    const attacks = [];
+
+    // Update AI creatures
+    for (const creature of this.aiCreatures) {
+      if (!creature || creature.isDying) continue;
+
+      if (creature.isFrozen) {
+        creature.update(creature.x, creature.y, false, WORLD_SIZE, WORLD_SIZE, this.particleSystem.particles);
+        continue;
+      }
+
+      // AI flocking
+      const target = updateFlocking(creature, mouseWorld, allCreatures, true);
+      let dx = target.x - creature.x;
+      let dy = target.y - creature.y;
+
+      // Photon jitter
+      if (creature.type === 0) {
+        dx += (Math.random() - 0.5) * 20;
+        dy += (Math.random() - 0.5) * 20;
+      }
+
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const speed = (creature.isHunting ? creature.config.huntSpeed : creature.config.speed) * 100;
+      let vx, vy;
+      if (dist > speed) {
+        vx = (dx / dist) * speed;
+        vy = (dy / dist) * speed;
+      } else {
+        vx = dx;
+        vy = dy;
+      }
+
+      creature.x += vx;
+      creature.y += vy;
+
+      // World boundaries
+      const halfWorld = WORLD_SIZE / 2;
+      if (creature.x > halfWorld) { creature.x = halfWorld; if (vx > 0) creature.wanderAngle = Math.PI + (Math.random() - 0.5) * Math.PI / 2; }
+      if (creature.x < -halfWorld) { creature.x = -halfWorld; if (vx < 0) creature.wanderAngle = (Math.random() - 0.5) * Math.PI / 2; }
+      if (creature.y > halfWorld) { creature.y = halfWorld; if (vy > 0) creature.wanderAngle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 2; }
+      if (creature.y < -halfWorld) { creature.y = -halfWorld; if (vy < 0) creature.wanderAngle = Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 2; }
+
+      if (Math.sqrt(vx * vx + vy * vy) > 0.1) {
+        creature.angle = Math.atan2(vy, vx);
+      }
+      creature.velocity.x = vx;
+      creature.velocity.y = vy;
+
+      // AI hunt trigger
+      if (creature.canHunt() && Math.random() < 0.002) {
+        creature.tryStartHunt();
+      }
+
+      const eaten = creature.update(creature.x, creature.y, false, WORLD_SIZE, WORLD_SIZE, this.particleSystem.particles);
+      if (eaten && eaten.length > 0) {
+        const group = this.aiManager.getGroup(creature.groupId);
+        eaten.forEach(idx => {
+          if (idx >= 0 && idx < this.particleSystem.particles.length) {
+            eatenByAI.add(idx);
+            if (group) {
+              const p = this.particleSystem.particles[idx];
+              if (p) group.energy += (p.energy || 1);
+            }
+          }
+        });
+      }
+
+      const victim = creature.detectAndAttackCreatures(allCreatures);
+      if (victim && !attacks.some(a => a.creature === victim)) {
+        attacks.push({ creature: victim, killedByPlayer: false });
+      }
+    }
+
+    // AI evolution check
+    if (this.frameCount % 10 === 0) {
+      for (const [groupId, group] of this.aiManager.groups.entries()) {
+        if (group.isEvolving) continue;
+        const maxE = stageEnergy(group.level);
+        if (group.energy >= maxE) {
+          group.energy = 0;
+          group.evolutionStage++;
+          if (group.evolutionStage >= 5) {
+            if (group.level < SPECIES.length - 1) {
+              this.evolveAIGroup(groupId);
+            }
+            group.evolutionStage = 0;
+          } else if (group.level >= 3) {
+            this.upgradeAIGroupComplexity(groupId);
+          } else {
+            this.addAICreatureToGroup(groupId);
+          }
+        }
+      }
+    }
+
+    if (this.creatures.length === 0) {
+      this.updateCamera();
+      return;
+    }
+
+    // Update player creatures
+    let playerLostCreature = false;
+    for (const creature of this.creatures) {
+      if (!creature || creature.isDying) continue;
+
+      if (creature.isFrozen) {
+        creature.update(creature.x, creature.y, false, WORLD_SIZE, WORLD_SIZE, this.particleSystem.particles);
+        continue;
+      }
+
+      const target = updateFlocking(creature, mouseWorld, allCreatures, false);
+      let dx = target.x - creature.x;
+      let dy = target.y - creature.y;
+
+      if (creature.type === 0) {
+        dx += (Math.random() - 0.5) * 30;
+        dy += (Math.random() - 0.5) * 30;
+      }
+
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const speed = (creature.isHunting ? creature.config.huntSpeed : creature.config.speed) * 100;
+      let vx, vy;
+      if (dist > speed) {
+        vx = (dx / dist) * speed;
+        vy = (dy / dist) * speed;
+      } else {
+        vx = dx;
+        vy = dy;
+      }
+
+      creature.x += vx;
+      creature.y += vy;
+
+      const halfWorld = WORLD_SIZE / 2;
+      if (creature.x > halfWorld) { creature.x = halfWorld; }
+      if (creature.x < -halfWorld) { creature.x = -halfWorld; }
+      if (creature.y > halfWorld) { creature.y = halfWorld; }
+      if (creature.y < -halfWorld) { creature.y = -halfWorld; }
+
+      if (Math.sqrt(vx * vx + vy * vy) > 0.1) {
+        creature.angle = Math.atan2(vy, vx);
+      }
+      creature.velocity.x = vx;
+      creature.velocity.y = vy;
+
+      // Player hunt trigger
+      if (creature.canHunt() && Math.random() < 0.003) {
+        creature.tryStartHunt();
+      }
+
+      const eaten = creature.update(creature.x, creature.y, false, WORLD_SIZE, WORLD_SIZE, this.particleSystem.particles);
+      if (eaten && eaten.length > 0) {
+        eaten.forEach(idx => {
+          if (idx >= 0 && idx < this.particleSystem.particles.length && !eatenByAI.has(idx)) {
+            eatenByPlayer.add(idx);
+          }
+        });
+      }
+
+      const victim = creature.detectAndAttackCreatures(allCreatures);
+      if (victim && !attacks.some(a => a.creature === victim)) {
+        attacks.push({ creature: victim, killedByPlayer: true });
+      }
+    }
+
+    // Process attacks
+    if (attacks.length > 0) {
+      for (const attack of attacks) {
+        const victim = attack.creature;
+        const deathParticles = victim.startDeath();
+        this.particleSystem.addParticles(deathParticles);
+
+        if (victim.isAI) {
+          const idx = this.aiCreatures.indexOf(victim);
+          if (idx > -1) {
+            this.aiCreatures.splice(idx, 1);
+            if (attack.killedByPlayer) {
+              this.score.kills++;
+              const t = victim.type;
+              if (!this.score.killsByLevel[t]) this.score.killsByLevel[t] = 0;
+              this.score.killsByLevel[t]++;
+            }
+            // Schedule respawn
+            this.aiManager.scheduleRespawn(victim.type);
+          }
+        } else {
+          const idx = this.creatures.indexOf(victim);
+          if (idx > -1) {
+            this.creatures.splice(idx, 1);
+            playerLostCreature = true;
+          }
+        }
+      }
+    }
+
+    // Player creature loss handling
+    if (playerLostCreature) {
+      if (this.evolutionStage > 0) {
+        this.evolutionStage--;
+        this.ui.update(this.playerLevel, this.evolutionStage, this.stageEnergy, this.stageMaxEnergy, this.creatures.length, this.aiCreatures.length);
+      } else if (this.creatures.length === 0) {
+        this.triggerGameOver();
+        return;
+      }
+    }
+
+    // Remove eaten particles
+    const allEaten = new Set([...eatenByPlayer, ...eatenByAI]);
+    if (allEaten.size > 0) {
+      this.particleSystem.removeIndices(allEaten);
+    }
+
+    // Add energy from player-eaten particles
+    let energyGained = 0;
+    for (const idx of eatenByPlayer) {
+      energyGained += 1;
+    }
+    if (energyGained > 0 && this.stageEnergy < this.stageMaxEnergy) {
+      this.stageEnergy += energyGained;
+      if (this.stageEnergy > this.stageMaxEnergy) this.stageEnergy = this.stageMaxEnergy;
+      this.ui.update(this.playerLevel, this.evolutionStage, this.stageEnergy, this.stageMaxEnergy, this.creatures.length, this.aiCreatures.length);
+    }
+
+    // Check evolution
+    if (this.stageEnergy >= this.stageMaxEnergy && this.creatures.length > 0) {
+      this.advanceStage();
+    }
+
+    this.updateCamera();
+  }
+
+  advanceStage() {
+    this.stageEnergy = 0;
+    this.evolutionStage++;
+
+    if (this.evolutionStage >= 5) {
+      // Evolve to next species
+      this.evolutionStage = 0;
+      if (this.playerLevel < SPECIES.length - 1) {
+        this.playerLevel++;
+        this.score.maxLevel = Math.max(this.score.maxLevel, this.playerLevel);
+        this.camera.setZoomForLevel(this.playerLevel);
+
+        // Replace all player creatures with new type
+        const positions = this.creatures.map(c => ({ x: c.x, y: c.y }));
+        this.creatures = [];
+        for (const pos of positions) {
+          const CreatureClass = CREATURE_CLASSES[this.playerLevel];
+          const config = SPECIES[this.playerLevel];
+          const creature = new CreatureClass(pos.x, pos.y, this.playerLevel, config, false);
+          creature.groupId = this.playerGroupId;
+          this.creatures.push(creature);
+        }
+      } else {
+        // Victory - reached max level stage 5
+        this.triggerVictory();
+        return;
+      }
+    } else if (this.evolutionStage <= 2) {
+      // Stages 1-2: spawn new creature in group
+      const leader = this.creatures[0];
+      if (leader) {
+        const offset = 50 + Math.random() * 50;
+        const angle = Math.random() * Math.PI * 2;
+        this.createPlayerAt(leader.x + Math.cos(angle) * offset, leader.y + Math.sin(angle) * offset);
+      }
+    } else {
+      // Stages 3-4: upgrade complexity
+      const newComplexity = this.evolutionStage - 2;
+      for (const creature of this.creatures) {
+        if (creature.upgradeComplexity) {
+          creature.upgradeComplexity(newComplexity);
+        }
+      }
+    }
+
+    this.stageMaxEnergy = stageEnergy(this.playerLevel);
+    this.ui.update(this.playerLevel, this.evolutionStage, this.stageEnergy, this.stageMaxEnergy, this.creatures.length, this.aiCreatures.length);
+  }
+
+  createPlayerAt(x, y) {
+    const CreatureClass = CREATURE_CLASSES[this.playerLevel];
+    const config = SPECIES[this.playerLevel];
+    const creature = new CreatureClass(x, y, this.playerLevel, config, false);
+    creature.groupId = this.playerGroupId;
+    if (this.evolutionStage >= 3 && creature.upgradeComplexity) {
+      creature.upgradeComplexity(this.evolutionStage - 2);
+    }
+    this.creatures.push(creature);
+  }
+
+  evolveAIGroup(groupId) {
+    const group = this.aiManager.getGroup(groupId);
+    if (!group) return;
+
+    const oldLevel = group.level;
+    group.level++;
+    group.evolutionStage = 0;
+
+    // Upgrade all creatures in this group
+    const groupCreatures = this.aiCreatures.filter(c => c.groupId === groupId);
+    for (const creature of groupCreatures) {
+      const idx = this.aiCreatures.indexOf(creature);
+      if (idx > -1) {
+        this.aiCreatures.splice(idx, 1);
+        const CreatureClass = CREATURE_CLASSES[group.level];
+        const config = SPECIES[group.level];
+        const newCreature = new CreatureClass(creature.x, creature.y, group.level, config, true);
+        newCreature.groupId = groupId;
+        this.aiCreatures.push(newCreature);
+      }
+    }
+  }
+
+  upgradeAIGroupComplexity(groupId) {
+    const group = this.aiManager.getGroup(groupId);
+    if (!group) return;
+    const complexity = group.evolutionStage - 2;
+    const groupCreatures = this.aiCreatures.filter(c => c.groupId === groupId);
+    for (const creature of groupCreatures) {
+      if (creature.upgradeComplexity) {
+        creature.upgradeComplexity(complexity);
+      }
+    }
+  }
+
+  addAICreatureToGroup(groupId) {
+    const group = this.aiManager.getGroup(groupId);
+    if (!group) return;
+    const groupCreatures = this.aiCreatures.filter(c => c.groupId === groupId);
+    if (groupCreatures.length > 0) {
+      const leader = groupCreatures[0];
+      const offset = 80;
+      const angle = Math.random() * Math.PI * 2;
+      const x = leader.x + Math.cos(angle) * offset;
+      const y = leader.y + Math.sin(angle) * offset;
+      const CreatureClass = CREATURE_CLASSES[group.level];
+      const config = SPECIES[group.level];
+      const creature = new CreatureClass(x, y, group.level, config, true);
+      creature.groupId = groupId;
+      this.aiCreatures.push(creature);
+    }
+  }
+
+  updateCamera() {
+    if (this.creatures.length > 0) {
+      let avgX = 0, avgY = 0;
+      for (const c of this.creatures) {
+        avgX += c.x;
+        avgY += c.y;
+      }
+      avgX /= this.creatures.length;
+      avgY /= this.creatures.length;
+      this.camera.update(avgX, avgY);
+    }
+  }
+
+  triggerGameOver() {
+    this.gameOver = true;
+    this.score.survivalTime = Math.floor((Date.now() - this.score.startTime) / 1000);
+    const overlay = this.ui.showGameOver(this.score);
+    const btn = overlay.querySelector('#restartBtn');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        overlay.remove();
+        this.resetGame();
+      });
+    }
+  }
+
+  triggerVictory() {
+    this.gameOver = true;
+    this.score.survivalTime = Math.floor((Date.now() - this.score.startTime) / 1000);
+    this.score.maxLevel = SPECIES.length - 1;
+    const overlay = this.ui.showVictory(this.score);
+    const btn = overlay.querySelector('#victoryRestartBtn');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        overlay.remove();
+        this.resetGame();
+      });
+    }
+  }
+
+  resetGame() {
+    this.gameOver = false;
+    this.init();
+  }
+
+  draw() {
+    this.ctx.fillStyle = '#050a0f';
+    this.ctx.fillRect(0, 0, this.width, this.height);
+
+    if (!this.gameStarted) return;
+
+    // Draw particles
+    this.particleSystem.draw(this.ctx, this.camera, this.width, this.height);
+
+    // Draw creatures in world space
+    const screenBounds = this.camera.getScreenBounds(this.width, this.height, 1.5);
+
+    this.ctx.save();
+    this.ctx.translate(this.width / 2, this.height / 2);
+    this.ctx.scale(this.camera.zoom, this.camera.zoom);
+    this.ctx.translate(-this.camera.x, -this.camera.y);
+
+    // Draw player creatures
+    for (const creature of this.creatures) {
+      if (this.isInScreen(creature, screenBounds)) {
+        creature.draw(this.ctx);
+      }
+    }
+
+    // Draw AI creatures
+    for (const creature of this.aiCreatures) {
+      if (this.isInScreen(creature, screenBounds)) {
+        creature.draw(this.ctx);
+      }
+    }
+
+    this.ctx.restore();
+  }
+
+  isInScreen(creature, bounds) {
+    const pad = (creature.scale || 1) * 150;
+    return creature.x + pad > bounds.left && creature.x - pad < bounds.right &&
+           creature.y + pad > bounds.top && creature.y - pad < bounds.bottom;
+  }
+
+  animate() {
+    if (this.gameStarted && !this.gameOver) {
+      this.update();
+    }
+    this.draw();
+    requestAnimationFrame(() => this.animate());
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Create the complete Plankton mobile game project from scratch, restructuring the original minified source into clean modular code with touch controls and mobile landscape adaptation. This is the main implementation feature covering project setup, all game logic, and mobile-specific features.",
+  "status": "in_progress",
+  "steps": [
+    "Step 1: Create project scaffolding - package.json with vite dependency, vite.config.js, netlify.toml (build command: npm run build, publish: dist), and index.html with mobile-optimized meta tags (viewport with user-scalable=no, maximum-scale=1)",
+    "Step 2: Create src/config.js - Game constants: PARTICLE_COUNT=4000, BASE_STAGE_ENERGY=25, WORLD_SIZE=10000, INITIAL_AI_COUNTS={0:10,1:7,2:6,3:4,4:3,5:2,6:1,7:1}, evolution chain data (8 species with name, desc, color, glow, speed, huntSpeed, huntDuration, huntCooldown, class reference). Include stageEnergy formula: BASE_STAGE_ENERGY * Math.pow(2, level)",
+    "Step 3: Create src/chain.js - Port the Chain class (class C in original) with Segment class (class O). Chain has segments array, distance, stiffness. update(x,y) cascades positions with stiffness constraints and max distance. draw(ctx, color, lineWidth) renders connected segments with arcs at even indices.",
+    "Step 4: Create src/creatures/base.js - Port base creature class (class D in original). Properties: x, y, type, config, isAI, angle, timer, attackPhase, isAttacking, isHunting, huntTimer, huntCooldownTimer, chains[], props{}, centerCollision, isDying, deathProgress, isFrozen, frozenTimer=6, energy/evolutionStage/groupId for AI. Methods: update(), detectAndEatParticles(), detectAndAttackCreatures(), getBounds(), determineVictim(), startDeath(), isDeathComplete(), getGlowIntensity(), getColor(), getGlowColor(), tryStartHunt(), canHunt(), getStateAlpha(), getStateColorMultiplier(). Player creatures use playerColor=#0ff, playerGlow=#0af.",
+    "Step 5: Create src/creatures/photon.js - Port class N. Single chain(4 segments, distance=5, radius 6->1, stiffness=0.8). Draw: glowing arc with random radius variation, hunting ring pulse effect.",
+    "Step 6: Create src/creatures/dart.js - Port class F. Single chain(8 segments, distance=8, radius 10->2, stiffness=0.9). Has thrust mechanic on attack. Draw: connected line with segments, pointed dart head shape.",
+    "Step 7: Create src/creatures/pulse.js - Port class U. 5 chains (12 segments each, distance=6, radius 4->1, stiffness=0.4). CenterCollision radius=20. Chains rotate around center. Draw: pentagonal core + radiating tentacles.",
+    "Step 8: Create src/creatures/serpent.js - Port class _. Single long chain (30+ segments, radius 14->3, stiffness=0.3). Upgradeable complexity (longer body). Draw: connected segments with side barbs every 3rd segment, snake head with jaw shape and eyes.",
+    "Step 9: Create src/creatures/pincer.js - Port class j. Main body chain + 2 claw arms + optional small arms. Complexity upgrades add arms. Draw: diamond-shaped head with internal cross pattern, hexagonal body segments, claw arms with pincer tips and attack wave effects.",
+    "Step 10: Create src/creatures/glider.js - Port class V. Spine chain + wing chains (paired). wavePhase property for wing animation. Complexity adds wing layers and tail fins. Draw: filled wing membranes between spine and wing chains, manta-ray head shape with eyes.",
+    "Step 11: Create src/creatures/hydra.js - Port class Z. Multiple head chains that orbit around core + small tentacle chains. Core with rotating rings. Complexity adds more heads. Draw: rotating concentric rings at core, snake-like heads with jaws and eyes, attack glow pulses.",
+    "Step 12: Create src/creatures/leviathan.js - Port class J. Single massive chain (18+ segments, radius 28+, stiffness=0.28). Draw: double-outline segments, rotating gear decorations every 4th segment, spike rings every 7th segment, black hole attack effect with orbiting particles.",
+    "Step 13: Create src/input.js - Touch input handler for mobile. Listen to touchstart/touchmove/touchend on canvas. Track first touch only (prevent multitouch issues). Convert touch position to screen coordinates. Export getInputPosition() that returns {x, y} in screen space. When no touch active, return last known position (for inertial drift). Disable default touch behaviors (preventDefault on touchstart/touchmove). Also support mouse as fallback for desktop testing.",
+    "Step 14: Create src/camera.js - Camera class with x, y, zoom, targetZoom. Method: update(targetX, targetY) smoothly follows target. Method: screenToWorld(screenX, screenY, canvasWidth, canvasHeight) converts screen coords to world coords considering camera offset and zoom. Method: getScreenBounds(canvasWidth, canvasHeight, margin) returns visible world rect. Zoom levels vary by creature type (smaller creatures = more zoomed in).",
+    "Step 15: Create src/particles.js - Particle system managing ~4000 particles. Particles have x, y, size, energy, vx, vy. Update: move particles, cull off-screen ones, respawn to maintain count within camera view area. Draw: simple white dots with low alpha, skip particles outside visible bounds for performance.",
+    "Step 16: Create src/ai.js - AI behavior system. Functions: updateFlocking(creature, allCreatures) returns target position based on: wander behavior (random angle drift), group cohesion (stay near same-type creatures), separation (avoid too-close creatures), predator avoidance (flee from higher-type creatures), prey pursuit (chase lower-type creatures when hunting). AI group management: track energy per group, evolve groups through stages (5 stages per level), spawn new creatures or upgrade complexity. Respawn dead AI on timer.",
+    "Step 17: Create src/ui.js - UI overlay management. Update species name/description display, evolution energy bar (stage X/5, current/max energy), creature counts (player and AI). Handle game over screen (show score: survival time * 10 + kills * 100, restart button). Handle victory screen (reached Leviathan, show detailed score breakdown with bonus). All UI elements positioned for landscape mobile viewing.",
+    "Step 18: Create src/game.js - Main Game class orchestrating everything. Properties: canvas, ctx, camera, creatures[], aiCreatures[], particles[], playerLevel, evolutionStage, stageEnergy, score{startTime, survivalTime, kills, killsByLevel, maxLevel}. Methods: init() creates player + AI + particles, update() runs physics/AI/collision/evolution logic each frame, draw() renders background + particles + creatures, resize() adapts to screen, advanceStage() handles evolution progression (5 stages: stages 1-2 add creatures to group, stages 3-4 upgrade complexity, stage 5 evolves to next species), gameOver()/victory()/resetGame(). World boundary clamping at +/- WORLD_SIZE/2.",
+    "Step 19: Create src/main.js - Entry point. Import Game, initialize on DOMContentLoaded. Set up start screen button handler, create game instance when started.",
+    "Step 20: Create index.html - Mobile-optimized HTML with: landscape viewport meta, touch-action:none on body, CSS for fullscreen canvas, start screen with PLANKTON title and touch instruction icons, UI overlays (species info top-left, energy bar below it, controls hint bottom-left), portrait rotation warning overlay (shown when window.innerHeight > window.innerWidth with CSS media query). Prevent zoom: meta viewport user-scalable=no, touch-action:manipulation. Prevent pull-to-refresh: overscroll-behavior:none.",
+    "Step 21: Run npm install && npm run build to verify the project compiles successfully to dist/"
+  ],
+  "acceptance_criteria": [
+    "npm run build succeeds without errors and produces dist/ with index.html and JS bundle",
+    "index.html includes mobile meta viewport with user-scalable=no",
+    "Touch input system handles touchstart/touchmove/touchend events",
+    "All 8 creature types are implemented with their unique chain-based rendering",
+    "AI system spawns creatures according to INITIAL_AI_COUNTS and manages evolution",
+    "Portrait orientation shows rotation warning overlay",
+    "netlify.toml correctly configured with build command and publish directory",
+    "Start screen with game title and touch-specific instructions (not mouse instructions)",
+    "Game over and victory screens with restart functionality",
+    "Camera follows player creatures with appropriate zoom per creature level"
+  ],
+  "verification": [
+    "cd /projects/sandbox/plankton && npm install && npm run build",
+    "ls /projects/sandbox/plankton/dist/index.html",
+    "ls /projects/sandbox/plankton/dist/assets/",
+    "grep -r 'touchstart' /projects/sandbox/plankton/src/",
+    "grep -r 'user-scalable' /projects/sandbox/plankton/index.html"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
