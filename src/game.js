@@ -40,6 +40,10 @@ export class Game {
     this.gameStarted = false;
     this.gameOver = false;
 
+    // Screen shake state
+    this.shakeIntensity = 0;
+    this.shakeDecay = 0.9;
+
     this.score = {
       startTime: 0,
       survivalTime: 0,
@@ -296,11 +300,36 @@ export class Game {
       creature.x += vx;
       creature.y += vy;
 
+      // Elastic boundary for player
       const halfWorld = WORLD_SIZE / 2;
-      if (creature.x > halfWorld) { creature.x = halfWorld; }
-      if (creature.x < -halfWorld) { creature.x = -halfWorld; }
-      if (creature.y > halfWorld) { creature.y = halfWorld; }
-      if (creature.y < -halfWorld) { creature.y = -halfWorld; }
+      const bounceForce = 0.3;
+      let hitBoundary = false;
+      if (creature.x > halfWorld) {
+        creature.x = halfWorld - (creature.x - halfWorld) * bounceForce;
+        vx = -Math.abs(vx) * bounceForce;
+        hitBoundary = true;
+      }
+      if (creature.x < -halfWorld) {
+        creature.x = -halfWorld + (-halfWorld - creature.x) * bounceForce;
+        vx = Math.abs(vx) * bounceForce;
+        hitBoundary = true;
+      }
+      if (creature.y > halfWorld) {
+        creature.y = halfWorld - (creature.y - halfWorld) * bounceForce;
+        vy = -Math.abs(vy) * bounceForce;
+        hitBoundary = true;
+      }
+      if (creature.y < -halfWorld) {
+        creature.y = -halfWorld + (-halfWorld - creature.y) * bounceForce;
+        vy = Math.abs(vy) * bounceForce;
+        hitBoundary = true;
+      }
+      // Clamp to ensure within bounds
+      creature.x = Math.max(-halfWorld, Math.min(halfWorld, creature.x));
+      creature.y = Math.max(-halfWorld, Math.min(halfWorld, creature.y));
+      if (hitBoundary) {
+        this.shakeIntensity = Math.max(this.shakeIntensity, 4);
+      }
 
       if (Math.sqrt(vx * vx + vy * vy) > 0.1) {
         creature.angle = Math.atan2(vy, vx);
@@ -568,6 +597,16 @@ export class Game {
 
     if (!this.gameStarted) return;
 
+    // Screen shake offset
+    let shakeX = 0, shakeY = 0;
+    if (this.shakeIntensity > 0.5) {
+      shakeX = (Math.random() - 0.5) * this.shakeIntensity * 2;
+      shakeY = (Math.random() - 0.5) * this.shakeIntensity * 2;
+      this.shakeIntensity *= this.shakeDecay;
+    } else {
+      this.shakeIntensity = 0;
+    }
+
     // Draw particles
     this.particleSystem.draw(this.ctx, this.camera, this.width, this.height);
 
@@ -575,9 +614,12 @@ export class Game {
     const screenBounds = this.camera.getScreenBounds(this.width, this.height, 1.5);
 
     this.ctx.save();
-    this.ctx.translate(this.width / 2, this.height / 2);
+    this.ctx.translate(this.width / 2 + shakeX, this.height / 2 + shakeY);
     this.ctx.scale(this.camera.zoom, this.camera.zoom);
     this.ctx.translate(-this.camera.x, -this.camera.y);
+
+    // Draw world boundary walls
+    this.drawBoundary();
 
     // Draw player creatures
     for (const creature of this.creatures) {
@@ -594,6 +636,94 @@ export class Game {
     }
 
     this.ctx.restore();
+  }
+
+  drawBoundary() {
+    const half = WORLD_SIZE / 2;
+    const ctx = this.ctx;
+
+    // Calculate player distance to boundary for glow intensity
+    let minDist = half;
+    for (const c of this.creatures) {
+      const dx = Math.min(half - Math.abs(c.x), half);
+      const dy = Math.min(half - Math.abs(c.y), half);
+      minDist = Math.min(minDist, dx, dy);
+    }
+    // Glow intensifies when player is within 300 units of boundary
+    const glowRange = 300;
+    const proximity = Math.max(0, 1 - minDist / glowRange);
+    const baseAlpha = 0.15 + proximity * 0.5;
+    const glowSize = 8 + proximity * 20;
+
+    // Animated pulse
+    const pulse = 0.8 + 0.2 * Math.sin(this.frameCount * 0.03);
+    const alpha = baseAlpha * pulse;
+
+    ctx.save();
+    ctx.strokeStyle = `rgba(0, 255, 255, ${alpha})`;
+    ctx.lineWidth = 2 + proximity * 2;
+    ctx.shadowColor = `rgba(0, 255, 255, ${alpha * 0.8})`;
+    ctx.shadowBlur = glowSize;
+
+    // Draw boundary rectangle
+    ctx.strokeRect(-half, -half, WORLD_SIZE, WORLD_SIZE);
+
+    // Draw corner accents
+    const cornerSize = 60 + proximity * 40;
+    const corners = [
+      [-half, -half, 1, 1],
+      [half, -half, -1, 1],
+      [-half, half, 1, -1],
+      [half, half, -1, -1]
+    ];
+    ctx.lineWidth = 3 + proximity * 2;
+    for (const [cx, cy, dx, dy] of corners) {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + dy * cornerSize);
+      ctx.lineTo(cx, cy);
+      ctx.lineTo(cx + dx * cornerSize, cy);
+      ctx.stroke();
+    }
+
+    // Inner warning glow when very close
+    if (proximity > 0.3) {
+      const innerAlpha = (proximity - 0.3) * 0.4;
+      const gradient = ctx.createLinearGradient(-half, 0, -half + 50, 0);
+      gradient.addColorStop(0, `rgba(255, 50, 50, ${innerAlpha})`);
+      gradient.addColorStop(1, 'rgba(255, 50, 50, 0)');
+
+      // Left edge warning
+      if (this.creatures.some(c => c.x < -half + glowRange)) {
+        ctx.fillStyle = gradient;
+        ctx.fillRect(-half, -half, 50, WORLD_SIZE);
+      }
+      // Right edge warning
+      const gradR = ctx.createLinearGradient(half, 0, half - 50, 0);
+      gradR.addColorStop(0, `rgba(255, 50, 50, ${innerAlpha})`);
+      gradR.addColorStop(1, 'rgba(255, 50, 50, 0)');
+      if (this.creatures.some(c => c.x > half - glowRange)) {
+        ctx.fillStyle = gradR;
+        ctx.fillRect(half - 50, -half, 50, WORLD_SIZE);
+      }
+      // Top edge warning
+      const gradT = ctx.createLinearGradient(0, -half, 0, -half + 50);
+      gradT.addColorStop(0, `rgba(255, 50, 50, ${innerAlpha})`);
+      gradT.addColorStop(1, 'rgba(255, 50, 50, 0)');
+      if (this.creatures.some(c => c.y < -half + glowRange)) {
+        ctx.fillStyle = gradT;
+        ctx.fillRect(-half, -half, WORLD_SIZE, 50);
+      }
+      // Bottom edge warning
+      const gradB = ctx.createLinearGradient(0, half, 0, half - 50);
+      gradB.addColorStop(0, `rgba(255, 50, 50, ${innerAlpha})`);
+      gradB.addColorStop(1, 'rgba(255, 50, 50, 0)');
+      if (this.creatures.some(c => c.y > half - glowRange)) {
+        ctx.fillStyle = gradB;
+        ctx.fillRect(-half, half - 50, WORLD_SIZE, 50);
+      }
+    }
+
+    ctx.restore();
   }
 
   isInScreen(creature, bounds) {
