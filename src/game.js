@@ -4,6 +4,7 @@ import { InputHandler } from './input.js';
 import { ParticleSystem } from './particles.js';
 import { AIManager, updateFlocking } from './ai.js';
 import { UI } from './ui.js';
+import { audio } from './audio.js';
 import { Photon } from './creatures/photon.js';
 import { Dart } from './creatures/dart.js';
 import { Pulse } from './creatures/pulse.js';
@@ -343,6 +344,7 @@ export class Game {
               const t = victim.type;
               if (!this.score.killsByLevel[t]) this.score.killsByLevel[t] = 0;
               this.score.killsByLevel[t]++;
+              audio.playKill();
             }
             // Schedule respawn
             this.aiManager.scheduleRespawn(victim.type);
@@ -386,6 +388,8 @@ export class Game {
       this.stageEnergy += energyGained;
       if (this.stageEnergy > this.stageMaxEnergy) this.stageEnergy = this.stageMaxEnergy;
       this.ui.update(this.playerLevel, this.evolutionStage, this.stageEnergy, this.stageMaxEnergy, this.creatures.length, this.aiCreatures.length);
+      // Play eat sound (throttled to avoid spam)
+      if (this.frameCount % 3 === 0) audio.playEat();
     }
 
     // Check evolution
@@ -407,6 +411,7 @@ export class Game {
         this.playerLevel++;
         this.score.maxLevel = Math.max(this.score.maxLevel, this.playerLevel);
         this.camera.setZoomForLevel(this.playerLevel);
+        audio.playLevelUp();
 
         // Replace all player creatures with new type
         const positions = this.creatures.map(c => ({ x: c.x, y: c.y }));
@@ -424,6 +429,7 @@ export class Game {
         return;
       }
     } else if (this.evolutionStage <= 2) {
+      audio.playEvolve();
       // Stages 1-2: spawn new creature in group
       const leader = this.creatures[0];
       if (leader) {
@@ -432,6 +438,7 @@ export class Game {
         this.createPlayerAt(leader.x + Math.cos(angle) * offset, leader.y + Math.sin(angle) * offset);
       }
     } else {
+      audio.playEvolve();
       // Stages 3-4: upgrade complexity
       const newComplexity = this.evolutionStage - 2;
       for (const creature of this.creatures) {
@@ -525,6 +532,7 @@ export class Game {
   triggerGameOver() {
     this.gameOver = true;
     this.score.survivalTime = Math.floor((Date.now() - this.score.startTime) / 1000);
+    audio.playDeath();
     const overlay = this.ui.showGameOver(this.score);
     const btn = overlay.querySelector('#restartBtn');
     if (btn) {
