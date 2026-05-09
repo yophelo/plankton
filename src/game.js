@@ -462,16 +462,15 @@ export class Game {
         this.camera.setZoomForLevel(this.playerLevel);
         audio.playLevelUp();
 
-        // Replace all player creatures with new type
-        const positions = this.creatures.map(c => ({ x: c.x, y: c.y }));
+        // Reset to single creature of new type
+        const leader = this.creatures[0];
+        const pos = leader ? { x: leader.x, y: leader.y } : { x: 0, y: 0 };
         this.creatures = [];
-        for (const pos of positions) {
-          const CreatureClass = CREATURE_CLASSES[this.playerLevel];
-          const config = SPECIES[this.playerLevel];
-          const creature = new CreatureClass(pos.x, pos.y, this.playerLevel, config, false);
-          creature.groupId = this.playerGroupId;
-          this.creatures.push(creature);
-        }
+        const CreatureClass = CREATURE_CLASSES[this.playerLevel];
+        const config = SPECIES[this.playerLevel];
+        const creature = new CreatureClass(pos.x, pos.y, this.playerLevel, config, false);
+        creature.groupId = this.playerGroupId;
+        this.creatures.push(creature);
       } else {
         // Victory - reached max level stage 5
         this.triggerVictory();
