@@ -5,8 +5,8 @@ export const WORLD_SIZE = 4000;
 export const INITIAL_AI_COUNTS = {
   0: 10,
   1: 7,
-  2: 6,
-  3: 5,
+  2: 5,
+  3: 4,
   4: 3,
   5: 2,
   6: 1,
