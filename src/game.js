@@ -626,7 +626,8 @@ export class Game {
   }
 
   draw() {
-    this.ctx.fillStyle = '#050a0f';
+    // Pure black base - the void outside world bounds
+    this.ctx.fillStyle = '#000000';
     this.ctx.fillRect(0, 0, this.width, this.height);
 
     if (!this.gameStarted) return;
@@ -678,8 +679,61 @@ export class Game {
   drawBoundary() {
     const half = WORLD_SIZE / 2;
     const ctx = this.ctx;
+    // Large offset to cover any visible area outside the boundary
+    const outer = half + 5000;
 
-    // Calculate player distance to boundary for glow intensity
+    // --- Draw pure black void outside world bounds ---
+    ctx.save();
+    ctx.fillStyle = '#000000';
+    // Top void
+    ctx.fillRect(-outer, -outer, outer * 2, outer - half);
+    // Bottom void
+    ctx.fillRect(-outer, half, outer * 2, outer - half);
+    // Left void
+    ctx.fillRect(-outer, -half, outer - half, WORLD_SIZE);
+    // Right void
+    ctx.fillRect(half, -half, outer - half, WORLD_SIZE);
+    ctx.restore();
+
+    // --- Draw world interior background (deep sea color) ---
+    ctx.save();
+    ctx.fillStyle = '#050a0f';
+    ctx.fillRect(-half, -half, WORLD_SIZE, WORLD_SIZE);
+    ctx.restore();
+
+    // --- Draw fade-to-black gradient at inner edges (transition zone) ---
+    const fadeWidth = 80;
+    ctx.save();
+    // Left edge fade (inside world, dark gradient toward boundary)
+    const gradL = ctx.createLinearGradient(-half, 0, -half + fadeWidth, 0);
+    gradL.addColorStop(0, 'rgba(0, 0, 0, 0.7)');
+    gradL.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = gradL;
+    ctx.fillRect(-half, -half, fadeWidth, WORLD_SIZE);
+
+    // Right edge fade
+    const gradR = ctx.createLinearGradient(half, 0, half - fadeWidth, 0);
+    gradR.addColorStop(0, 'rgba(0, 0, 0, 0.7)');
+    gradR.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = gradR;
+    ctx.fillRect(half - fadeWidth, -half, fadeWidth, WORLD_SIZE);
+
+    // Top edge fade
+    const gradT = ctx.createLinearGradient(0, -half, 0, -half + fadeWidth);
+    gradT.addColorStop(0, 'rgba(0, 0, 0, 0.7)');
+    gradT.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = gradT;
+    ctx.fillRect(-half, -half, WORLD_SIZE, fadeWidth);
+
+    // Bottom edge fade
+    const gradB = ctx.createLinearGradient(0, half, 0, half - fadeWidth);
+    gradB.addColorStop(0, 'rgba(0, 0, 0, 0.7)');
+    gradB.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = gradB;
+    ctx.fillRect(-half, half - fadeWidth, WORLD_SIZE, fadeWidth);
+    ctx.restore();
+
+    // --- Calculate proximity for glow effects ---
     let minDist = half;
     for (const c of this.creatures) {
       const dx = Math.min(half - Math.abs(c.x), half);
@@ -735,27 +789,27 @@ export class Game {
         ctx.fillRect(-half, -half, 50, WORLD_SIZE);
       }
       // Right edge warning
-      const gradR = ctx.createLinearGradient(half, 0, half - 50, 0);
-      gradR.addColorStop(0, `rgba(255, 50, 50, ${innerAlpha})`);
-      gradR.addColorStop(1, 'rgba(255, 50, 50, 0)');
+      const gradWR = ctx.createLinearGradient(half, 0, half - 50, 0);
+      gradWR.addColorStop(0, `rgba(255, 50, 50, ${innerAlpha})`);
+      gradWR.addColorStop(1, 'rgba(255, 50, 50, 0)');
       if (this.creatures.some(c => c.x > half - glowRange)) {
-        ctx.fillStyle = gradR;
+        ctx.fillStyle = gradWR;
         ctx.fillRect(half - 50, -half, 50, WORLD_SIZE);
       }
       // Top edge warning
-      const gradT = ctx.createLinearGradient(0, -half, 0, -half + 50);
-      gradT.addColorStop(0, `rgba(255, 50, 50, ${innerAlpha})`);
-      gradT.addColorStop(1, 'rgba(255, 50, 50, 0)');
+      const gradWT = ctx.createLinearGradient(0, -half, 0, -half + 50);
+      gradWT.addColorStop(0, `rgba(255, 50, 50, ${innerAlpha})`);
+      gradWT.addColorStop(1, 'rgba(255, 50, 50, 0)');
       if (this.creatures.some(c => c.y < -half + glowRange)) {
-        ctx.fillStyle = gradT;
+        ctx.fillStyle = gradWT;
         ctx.fillRect(-half, -half, WORLD_SIZE, 50);
       }
       // Bottom edge warning
-      const gradB = ctx.createLinearGradient(0, half, 0, half - 50);
-      gradB.addColorStop(0, `rgba(255, 50, 50, ${innerAlpha})`);
-      gradB.addColorStop(1, 'rgba(255, 50, 50, 0)');
+      const gradWB = ctx.createLinearGradient(0, half, 0, half - 50);
+      gradWB.addColorStop(0, `rgba(255, 50, 50, ${innerAlpha})`);
+      gradWB.addColorStop(1, 'rgba(255, 50, 50, 0)');
       if (this.creatures.some(c => c.y > half - glowRange)) {
-        ctx.fillStyle = gradB;
+        ctx.fillStyle = gradWB;
         ctx.fillRect(-half, half - 50, WORLD_SIZE, 50);
       }
     }

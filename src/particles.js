@@ -1,4 +1,6 @@
-import { PARTICLE_COUNT } from './config.js';
+import { PARTICLE_COUNT, WORLD_SIZE } from './config.js';
+
+const HALF_WORLD = WORLD_SIZE / 2;
 
 export class ParticleSystem {
   constructor() {
@@ -13,9 +15,12 @@ export class ParticleSystem {
     const cy = camera.y || 0;
 
     for (let i = 0; i < count; i++) {
+      // Generate within world bounds only
+      const x = (Math.random() - 0.5) * WORLD_SIZE;
+      const y = (Math.random() - 0.5) * WORLD_SIZE;
       this.particles.push({
-        x: cx + (Math.random() - 0.5) * spread * 2,
-        y: cy + (Math.random() - 0.5) * spread * 2,
+        x,
+        y,
         size: Math.random() * 3 + 1.5,
         energy: 1,
         vx: (Math.random() - 0.5) * 0.5,
@@ -25,10 +30,16 @@ export class ParticleSystem {
   }
 
   update(camera, canvasWidth, canvasHeight) {
-    // Move particles
+    // Move particles and keep within world bounds
     for (const p of this.particles) {
       p.x += p.vx;
       p.y += p.vy;
+
+      // Bounce off world boundaries
+      if (p.x > HALF_WORLD) { p.x = HALF_WORLD; p.vx = -p.vx; }
+      if (p.x < -HALF_WORLD) { p.x = -HALF_WORLD; p.vx = -p.vx; }
+      if (p.y > HALF_WORLD) { p.y = HALF_WORLD; p.vy = -p.vy; }
+      if (p.y < -HALF_WORLD) { p.y = -HALF_WORLD; p.vy = -p.vy; }
     }
 
     // Cull particles far from view
@@ -45,16 +56,13 @@ export class ParticleSystem {
       p.y > top - spread && p.y < bottom + spread
     );
 
-    // Respawn to maintain count
-    const spawnLeft = left - spread;
-    const spawnRight = right + spread;
-    const spawnTop = top - spread;
-    const spawnBottom = bottom + spread;
-
+    // Respawn to maintain count - only within world bounds
     while (this.particles.length < PARTICLE_COUNT) {
+      const x = (Math.random() - 0.5) * WORLD_SIZE;
+      const y = (Math.random() - 0.5) * WORLD_SIZE;
       this.particles.push({
-        x: spawnLeft + Math.random() * (spawnRight - spawnLeft),
-        y: spawnTop + Math.random() * (spawnBottom - spawnTop),
+        x,
+        y,
         size: Math.random() * 3 + 1.5,
         energy: 1,
         vx: (Math.random() - 0.5) * 0.5,
