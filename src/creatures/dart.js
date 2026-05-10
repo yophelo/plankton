@@ -70,7 +70,7 @@ export class Dart extends BaseCreature {
     ctx.stroke();
 
     if (this.attackPhase > 0) {
-      ctx.fillStyle = `rgba(170, 255, 255, ${this.attackPhase * 0.6})`;
+      ctx.fillStyle = `rgba(170, 221, 255, ${this.attackPhase * 0.6})`;
       ctx.fill();
 
       if (this.attackPhase > 0.2 && this.attackPhase < 0.7) {

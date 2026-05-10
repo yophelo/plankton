@@ -31,8 +31,8 @@ export const SPECIES = [
   {
     name: 'II. 飞梭',
     desc: '幼体级 - 僵硬的冲刺与滑行',
-    color: '#aff',
-    glow: '#0ff',
+    color: '#adf',
+    glow: '#4af',
     speed: 0.028,
     huntSpeed: 0.04,
     huntDuration: 180,
