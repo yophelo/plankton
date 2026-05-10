@@ -235,8 +235,23 @@ export class Game {
       creature.velocity.x = vx;
       creature.velocity.y = vy;
 
-      // AI hunt trigger
-      if (creature.canHunt() && Math.random() < 0.001) {
+      // AI hunt trigger - higher chance when player is near boundary
+      let huntChance = 0.001;
+      if (this.creatures.length > 0) {
+        const player = this.creatures[0];
+        const halfWorld = WORLD_SIZE / 2;
+        const playerBoundaryDist = Math.min(
+          halfWorld - Math.abs(player.x),
+          halfWorld - Math.abs(player.y)
+        );
+        // If player is within 300 units of boundary, gradually increase hunt chance
+        // for AI that could reach them (same or higher type)
+        if (playerBoundaryDist < 300 && creature.type >= player.type) {
+          const proximity = 1 - (playerBoundaryDist / 300); // 0~1, closer = higher
+          huntChance += proximity * 0.004; // up to 0.005 total (5x base rate)
+        }
+      }
+      if (creature.canHunt() && Math.random() < huntChance) {
         creature.tryStartHunt();
       }
 

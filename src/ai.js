@@ -21,6 +21,11 @@ export function updateFlocking(creature, mouseWorldPos, allCreatures, isAI = fal
     let sepX = 0, sepY = 0;
     let fleeX = 0, fleeY = 0;
     let preyX = 0, preyY = 0, preyFound = false;
+    let preyDistSq = Infinity;
+
+    // Extended prey detection range: base 500, up to 800 for higher types
+    const preyRange = 500 + creature.type * 50;
+    const preyRangeSq = preyRange * preyRange;
 
     for (const other of allCreatures) {
       if (other === creature) continue;
@@ -50,11 +55,14 @@ export function updateFlocking(creature, mouseWorldPos, allCreatures, isAI = fal
         fleeY -= dy / dist * 2;
       }
 
-      // Prey pursuit (chase lower type when hunting)
-      if (creature.isHunting && other.type < creature.type && distSq < 500 * 500 && !preyFound) {
-        preyX = other.x;
-        preyY = other.y;
-        preyFound = true;
+      // Prey pursuit (chase lower type when hunting) - pick closest prey
+      if (creature.isHunting && other.type < creature.type && distSq < preyRangeSq) {
+        if (distSq < preyDistSq) {
+          preyX = other.x;
+          preyY = other.y;
+          preyDistSq = distSq;
+          preyFound = true;
+        }
       }
     }
 
@@ -80,12 +88,14 @@ export function updateFlocking(creature, mouseWorldPos, allCreatures, isAI = fal
       targetY = preyY;
     }
 
-    // Boundary avoidance
+    // Boundary avoidance - weakened when hunting prey near boundary
     const boundary = WORLD_SIZE / 2 - 200;
-    if (creature.x > boundary) targetX -= 100;
-    if (creature.x < -boundary) targetX += 100;
-    if (creature.y > boundary) targetY -= 100;
-    if (creature.y < -boundary) targetY += 100;
+    // Reduce boundary avoidance force when actively chasing prey
+    const boundaryForce = (creature.isHunting && preyFound) ? 30 : 100;
+    if (creature.x > boundary) targetX -= boundaryForce;
+    if (creature.x < -boundary) targetX += boundaryForce;
+    if (creature.y > boundary) targetY -= boundaryForce;
+    if (creature.y < -boundary) targetY += boundaryForce;
   }
 
   return { x: targetX, y: targetY };
