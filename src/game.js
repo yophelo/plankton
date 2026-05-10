@@ -642,9 +642,6 @@ export class Game {
       this.shakeIntensity = 0;
     }
 
-    // Draw particles
-    this.particleSystem.draw(this.ctx, this.camera, this.width, this.height);
-
     // Draw creatures in world space
     const screenBounds = this.camera.getScreenBounds(this.width, this.height, 1.5);
 
@@ -653,8 +650,18 @@ export class Game {
     this.ctx.scale(this.camera.zoom, this.camera.zoom);
     this.ctx.translate(-this.camera.x, -this.camera.y);
 
-    // Draw world boundary walls
+    // Draw world boundary (void + interior background + edge effects)
     this.drawBoundary();
+
+    this.ctx.restore();
+
+    // Draw particles (after boundary so they appear on top of the interior background)
+    this.particleSystem.draw(this.ctx, this.camera, this.width, this.height);
+
+    this.ctx.save();
+    this.ctx.translate(this.width / 2 + shakeX, this.height / 2 + shakeY);
+    this.ctx.scale(this.camera.zoom, this.camera.zoom);
+    this.ctx.translate(-this.camera.x, -this.camera.y);
 
     // Draw player creatures
     for (const creature of this.creatures) {
